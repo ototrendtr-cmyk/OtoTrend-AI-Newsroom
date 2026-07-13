@@ -4,7 +4,11 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 
 from app.database.database import Base, engine
-from app.database.crud import get_all_news, get_news_count
+from app.database.crud import (
+    get_all_news,
+    get_news_count,
+    get_news_by_id,
+)
 from app.scheduler.news_scheduler import start_scheduler
 from app.services.telegram_service import send_telegram_message
 
@@ -34,6 +38,20 @@ def home(request: Request):
             "request": request,
             "news": news,
             "count": count,
+        },
+    )
+
+
+@app.get("/news/{news_id}")
+def news_detail(request: Request, news_id: int):
+
+    news = get_news_by_id(news_id)
+
+    return templates.TemplateResponse(
+        "detail.html",
+        {
+            "request": request,
+            "news": news,
         },
     )
 

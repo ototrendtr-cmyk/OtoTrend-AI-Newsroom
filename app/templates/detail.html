@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>{{ news.title }}</title>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>{{ news.title }}</h1>
+
+    <hr>
+
+    <p>
+
+        <strong>Kaynak:</strong>
+
+        {{ news.source }}
+
+    </p>
+
+    <p>
+
+        <a href="{{ news.link }}" target="_blank">
+
+            🔗 Orijinal Haberi Aç
+
+        </a>
+
+    </p>
+
+    <hr>
+
+    <h2>AI Bilgileri</h2>
+
+    <p>
+
+        <strong>Türkçe Başlık</strong><br>
+
+        {{ news.translated_title or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Özet</strong><br>
+
+        {{ news.summary or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Instagram Başlığı</strong><br>
+
+        {{ news.instagram_title or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Instagram Açıklaması</strong><br>
+
+        {{ news.instagram_caption or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Hashtag</strong><br>
+
+        {{ news.hashtags or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Görsel Promptu</strong><br>
+
+        {{ news.image_prompt or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Kategori</strong><br>
+
+        {{ news.category or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Marka</strong><br>
+
+        {{ news.brand or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Dil</strong><br>
+
+        {{ news.language or "-" }}
+
+    </p>
+
+    <p>
+
+        <strong>Önem Puanı</strong><br>
+
+        {{ news.importance }}
+
+    </p>
+
+    <p>
+
+        <strong>Durum</strong><br>
+
+        {{ news.status }}
+
+    </p>
+
+    <br>
+
+    <a href="/">⬅ Haber Listesine Dön</a>
+
+</div>
+
+</body>
+
+</html>
