@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+
+<meta charset="UTF-8">
+
+<title>OtoTrend AI Newsroom</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-dark text-light">
+
+<div class="container mt-4">
+
+<h1 class="mb-4">
+🚗 OtoTrend AI Newsroom
+</h1>
+
+<div class="row mb-4">
+
+<div class="col">
+
+<div class="card bg-primary text-white">
+
+<div class="card-body">
+
+<h2>{{ count }}</h2>
+
+Toplam Haber
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col">
+
+<div class="card bg-success text-white">
+
+<div class="card-body">
+
+<h2>2</h2>
+
+Kaynak
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<table class="table table-dark table-hover">
+
+<thead>
+
+<tr>
+
+<th>Kaynak</th>
+
+<th>Başlık</th>
+
+<th></th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for item in news %}
+
+<tr>
+
+<td>
+
+<span class="badge bg-primary">
+
+{{ item.source }}
+
+</span>
+
+</td>
+
+<td>
+
+{{ item.title }}
+
+</td>
+
+<td>
+
+<a
+class="btn btn-sm btn-outline-info"
+href="{{ item.link }}"
+target="_blank">
+
+Aç
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</body>
+
+</html>
