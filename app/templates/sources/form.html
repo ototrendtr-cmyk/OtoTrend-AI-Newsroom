@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}
+Yeni Kaynak | OtoTrend AI CMS
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <h2 class="mb-4">
+        Yeni Kaynak
+    </h2>
+
+    <form method="post" action="/sources/new">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label class="form-label">Kaynak Adı</label>
+                    <input
+                        type="text"
+                        name="name"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">RSS Adresi</label>
+                    <input
+                        type="url"
+                        name="rss_url"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Website</label>
+                    <input
+                        type="url"
+                        name="website"
+                        class="form-control"
+                    >
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Scraper
+
+                    </label>
+
+                    <select
+                        name="scraper"
+                        class="form-select"
+                        required
+                    >
+
+                        <option value="Motor1">
+
+                            Motor1
+
+                        </option>
+
+                        <option value="Carscoops">
+
+                            Carscoops
+
+                        </option>
+
+                        <option value="AutoExpress">
+
+                            AutoExpress
+
+                        </option>
+
+                    </select>
+
+                    <div class="form-text">
+
+                        Bu kaynak için kullanılacak scraper.
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="btn btn-primary"
+                    type="submit">
+
+                    Kaydet
+
+                </button>
+
+                <a
+                    href="/sources"
+                    class="btn btn-secondary">
+
+                    Vazgeç
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

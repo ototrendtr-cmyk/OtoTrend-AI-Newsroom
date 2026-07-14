@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}
+Kaynaklar | OtoTrend AI CMS
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-1">
+            Kaynak Yönetimi
+        </h2>
+
+        <p class="text-muted mb-0">
+            RSS ve haber kaynaklarını yönetin.
+        </p>
+
+    </div>
+
+    <a href="/sources/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i>
+            Yeni Kaynak
+    </a>
+
+</div>
+
+<div class="card">
+
+    <div class="table-responsive">
+
+        <table class="table table-hover align-middle">
+
+            <thead>
+
+            <tr>
+
+                <th>ID</th>
+                <th>Kaynak</th>
+                <th>RSS</th>
+                <th>Durum</th>
+                <th>Öncelik</th>
+                <th>Haber</th>
+                <th>Hata</th>
+                <th>İşlem</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for source in sources %}
+
+            <tr>
+
+                <td>{{ source.id }}</td>
+
+                <td>
+                    <strong>{{ source.name }}</strong>
+                </td>
+
+                <td>{{ source.rss_url }}</td>
+
+                <td>
+
+                    {% if source.enabled %}
+
+                    <span class="badge bg-success">
+
+                        Aktif
+
+                    </span>
+
+                    {% else %}
+
+                    <span class="badge bg-danger">
+
+                        Pasif
+
+                    </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>{{ source.priority }}</td>
+
+                <td>{{ source.total_news }}</td>
+
+                <td>{{ source.error_count }}</td>
+
+               <td class="d-flex gap-2">
+
+                   <a
+                       href="/sources/{{ source.id }}/edit"
+                       class="btn btn-sm btn-outline-primary"
+                       title="Düzenle"
+                   >
+                       <i class="bi bi-pencil"></i>
+                   </a>
+
+                    <form
+                        method="post"
+                        action="/sources/{{ source.id }}/delete"
+                        onsubmit="return confirm('Bu kaynağı silmek istediğinize emin misiniz?');"
+    >
+
+                        <button
+                            type="submit"
+                            class="btn btn-sm btn-outline-danger"
+                            title="Sil"
+                        >
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                    </form>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

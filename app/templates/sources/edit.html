@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}
+Kaynağı Düzenle | OtoTrend AI CMS
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-1">
+
+            Kaynağı Düzenle
+
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Haber kaynağı bilgilerini güncelleyin.
+
+        </p>
+
+    </div>
+
+</div>
+
+<div class="card">
+
+    <div class="card-body">
+
+        <form
+            method="post"
+            action="/sources/{{ source.id }}/edit"
+        >
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Kaynak Adı
+
+                </label>
+
+                <input
+                    type="text"
+                    class="form-control"
+                    name="name"
+                    value="{{ source.name }}"
+                    required
+                >
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    RSS Adresi
+
+                </label>
+
+                <input
+                    type="url"
+                    class="form-control"
+                    name="rss_url"
+                    value="{{ source.rss_url }}"
+                    required
+                >
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Website
+
+                </label>
+
+                <input
+                    type="url"
+                    class="form-control"
+                    name="website"
+                    value="{{ source.website or '' }}"
+                >
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Scraper
+
+                </label>
+
+                <select
+                    name="scraper"
+                    class="form-select"
+                    required
+                >
+
+                    <option
+                        value="Motor1"
+                        {% if source.scraper == "Motor1" %}selected{% endif %}
+                    >
+                        Motor1
+                    </option>
+
+                    <option
+                        value="Carscoops"
+                        {% if source.scraper == "Carscoops" %}selected{% endif %}
+                    >
+                        Carscoops
+                    </option>
+
+                    <option
+                        value="AutoExpress"
+                        {% if source.scraper == "AutoExpress" %}selected{% endif %}
+                    >
+                        AutoExpress
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Öncelik
+
+                </label>
+
+</div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Öncelik
+
+                </label>
+
+                <input
+                    type="number"
+                    class="form-control"
+                    name="priority"
+                    value="{{ source.priority }}"
+                >
+
+            </div>
+
+            <div class="form-check form-switch mb-4">
+
+                <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="enabled"
+                    name="enabled"
+                    {% if source.enabled %}checked{% endif %}
+                >
+
+                <label
+                    class="form-check-label"
+                    for="enabled"
+                >
+
+                    Kaynak Aktif
+
+                </label>
+
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-success"
+            >
+
+                <i class="bi bi-check-circle"></i>
+
+                Kaydet
+
+            </button>
+
+            <a
+                href="/sources"
+                class="btn btn-secondary"
+            >
+
+                <i class="bi bi-arrow-left"></i>
+
+                Geri Dön
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

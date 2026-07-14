@@ -1,66 +1,60 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.database.database import Base, engine
-from app.database.crud import (
-    get_all_news,
-    get_news_count,
-    get_news_by_id,
-)
+
 from app.scheduler.news_scheduler import start_scheduler
-from app.services.telegram_service import send_telegram_message
+
+# Views
+from app.views.dashboard import router as dashboard_router
+from app.views.news import router as news_router
+from app.views.sources import router as source_router
+
+# API
+from app.api.news import router as api_news_router
+from app.api.source import router as api_source_router
+from app.api.ai import router as ai_router
 
 Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
+    print("🚀 OtoTrend AI başlatılıyor...")
+
     start_scheduler()
+
     yield
 
-
-app = FastAPI(lifespan=lifespan)
-
-templates = Jinja2Templates(directory="app/templates")
+    print("🛑 OtoTrend AI durduruldu.")
 
 
-@app.get("/")
-def home(request: Request):
+app = FastAPI(
 
-    news = get_all_news()
-    count = get_news_count()
+    title="OtoTrend AI CMS",
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "news": news,
-            "count": count,
-        },
-    )
+    version="2.1.0",
 
+    lifespan=lifespan,
 
-@app.get("/news/{news_id}")
-def news_detail(request: Request, news_id: int):
+)
 
-    news = get_news_by_id(news_id)
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static",
+)
 
-    return templates.TemplateResponse(
-        "detail.html",
-        {
-            "request": request,
-            "news": news,
-        },
-    )
+# Views
+app.include_router(dashboard_router)
+app.include_router(news_router)
+app.include_router(source_router)
 
 
-@app.get("/telegram-test")
-def telegram_test():
-
-    send_telegram_message(
-        "🚗 OtoTrend AI\n\n✅ Telegram bağlantısı başarıyla kuruldu."
-    )
-
-    return {"status": "Mesaj gönderildi"}
+# API
+app.include_router(api_news_router)
+app.include_router(api_source_router)
+app.include_router(ai_router)
