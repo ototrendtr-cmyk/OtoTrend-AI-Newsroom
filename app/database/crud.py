@@ -2,6 +2,7 @@ from sqlalchemy import desc
 
 from app.database.database import SessionLocal
 from app.models.news import News
+from app.services.duplicate_service import is_similar
 
 
 # ==========================================================
@@ -14,10 +15,20 @@ def save_news(news_list):
 
     new_news = []
 
+    duplicate_link = 0
+    duplicate_title = 0
+
     try:
+
+        # Başlıkları bir kez oku
+        existing_titles = (
+            db.query(News.title)
+            .all()
+        )
 
         for item in news_list:
 
+            # Aynı link kontrolü
             exists = (
                 db.query(News)
                 .filter(News.link == item["link"])
@@ -25,6 +36,38 @@ def save_news(news_list):
             )
 
             if exists:
+
+                duplicate_link += 1
+
+                print(
+                    f"🔁 Aynı link bulundu: {item['title']}"
+                )
+
+                continue
+
+            # Benzer başlık kontrolü
+            duplicate = False
+
+            for row in existing_titles:
+
+                if not row[0]:
+                    continue
+
+                if is_similar(
+                    item["title"],
+                    row[0],
+                ):
+                    duplicate = True
+                    break
+
+            if duplicate:
+
+                duplicate_title += 1
+
+                print(
+                    f"🟡 Benzer başlık bulundu: {item['title']}"
+                )
+
                 continue
 
             news = News(
@@ -49,6 +92,12 @@ def save_news(news_list):
 
             new_news.append(news)
 
+        print("-----------------------------------")
+        print(f"Yeni Haber      : {len(new_news)}")
+        print(f"Aynı Link       : {duplicate_link}")
+        print(f"Benzer Başlık   : {duplicate_title}")
+        print("-----------------------------------")
+
         db.commit()
 
         return new_news
@@ -56,7 +105,6 @@ def save_news(news_list):
     finally:
 
         db.close()
-
 
 # ==========================================================
 # HABERLER

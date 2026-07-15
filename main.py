@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.database.database import Base, engine
-
+from app.database.source_seed import seed_sources
 from app.scheduler.news_scheduler import start_scheduler
 
 # Views
@@ -24,6 +24,8 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
 
     print("🚀 OtoTrend AI başlatılıyor...")
+
+    seed_sources()
 
     start_scheduler()
 

@@ -16,12 +16,14 @@ def get_enabled_sources():
 
     try:
 
-        return (
+        sources = (
             db.query(Source)
             .filter(Source.enabled == True)
-            .order_by(Source.priority)
+            .order_by(Source.priority, Source.id)
             .all()
         )
+
+        return sources
 
     finally:
 

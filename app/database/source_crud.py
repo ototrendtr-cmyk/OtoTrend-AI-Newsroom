@@ -130,3 +130,73 @@ def delete_source(source_id):
     finally:
 
         db.close()        
+
+from datetime import datetime
+
+
+def mark_source_run(source_name: str):
+    db = SessionLocal()
+
+    try:
+
+        source = (
+            db.query(Source)
+            .filter(Source.name == source_name)
+            .first()
+        )
+
+        if source:
+            source.last_run = datetime.utcnow()
+            db.commit()
+
+    finally:
+        db.close()
+
+
+def mark_source_success(source_name: str, news_count: int):
+
+    db = SessionLocal()
+
+    try:
+
+        source = (
+            db.query(Source)
+            .filter(Source.name == source_name)
+            .first()
+        )
+
+        if source:
+
+            source.last_success = datetime.utcnow()
+            source.success_count += 1
+            source.total_news += news_count
+            source.last_error = None
+
+            db.commit()
+
+    finally:
+        db.close()
+
+
+def mark_source_error(source_name: str, error_message: str):
+
+    db = SessionLocal()
+
+    try:
+
+        source = (
+            db.query(Source)
+            .filter(Source.name == source_name)
+            .first()
+        )
+
+        if source:
+
+            source.error_count += 1
+            source.last_error = error_message
+            source.last_run = datetime.utcnow()
+
+            db.commit()
+
+    finally:
+        db.close()        
