@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.ai.warmup import warmup
 from app.database.database import Base, engine
 from app.database.source_seed import seed_sources
 from app.scheduler.news_scheduler import start_scheduler
@@ -17,6 +18,7 @@ from app.api.news import router as api_news_router
 from app.api.source import router as api_source_router
 from app.api.ai import router as ai_router
 
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -25,7 +27,21 @@ async def lifespan(app: FastAPI):
 
     print("🚀 OtoTrend AI başlatılıyor...")
 
+    # ==========================================================
+    # Database
+    # ==========================================================
+
     seed_sources()
+
+    # ==========================================================
+    # AI Warmup
+    # ==========================================================
+
+    warmup()
+
+    # ==========================================================
+    # Scheduler
+    # ==========================================================
 
     start_scheduler()
 
@@ -50,13 +66,18 @@ app.mount(
     name="static",
 )
 
+# ==========================================================
 # Views
+# ==========================================================
+
 app.include_router(dashboard_router)
 app.include_router(news_router)
 app.include_router(source_router)
 
-
+# ==========================================================
 # API
+# ==========================================================
+
 app.include_router(api_news_router)
 app.include_router(api_source_router)
 app.include_router(ai_router)

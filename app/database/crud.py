@@ -1,5 +1,5 @@
 from sqlalchemy import desc
-
+from email.utils import parsedate_to_datetime
 from app.database.database import SessionLocal
 from app.models.news import News
 from app.services.duplicate_service import is_similar
@@ -74,6 +74,13 @@ def save_news(news_list):
 
                 title=item.get("title"),
 
+                translated_title=item.get("title_tr"),
+
+                summary=item.get("summary_tr"),
+                content=(
+                    item.get("content")
+                    or item.get("description")
+                ),
                 link=item.get("link"),
 
                 source=item.get("source"),
@@ -84,8 +91,11 @@ def save_news(news_list):
 
                 language=item.get("language", "en"),
 
-                published_at=item.get("published_at"),
-
+                published_at=(
+                    parsedate_to_datetime(item["published_at"])
+                    if item.get("published_at")
+                    else None
+                ),
             )
 
             db.add(news)
