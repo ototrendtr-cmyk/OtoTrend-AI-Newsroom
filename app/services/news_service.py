@@ -1,7 +1,12 @@
 from app.database.crud import save_news
-from app.scrapers.registry import SCRAPER_REGISTRY
+
+from app.scrapers.registry import (
+    get_scraper_function,
+    get_scraper_type,
+)
 
 from app.services.source_service import get_enabled_sources
+
 from app.database.source_crud import (
     mark_source_run,
     mark_source_success,
@@ -17,11 +22,15 @@ def update_news():
     total_new = 0
 
     sources = get_enabled_sources()
+
     print(f"Toplam aktif kaynak: {len(sources)}")
 
     for s in sources:
+
         print(
-            f"- {s.name} | scraper={s.scraper} | enabled={s.enabled}"
+            f"- {s.name}"
+            f" | scraper={s.scraper}"
+            f" | enabled={s.enabled}"
         )
 
     if not sources:
@@ -36,18 +45,35 @@ def update_news():
 
             mark_source_run(source.name)
 
-            scraper = SCRAPER_REGISTRY.get(source.scraper)
+            scraper = get_scraper_function(source.scraper)
 
             if scraper is None:
 
                 print(
-                    f"⚠ Kaynak: {source.name} | "
-                    f"Scraper: '{source.scraper}' registry'de bulunamadı."
+                    f"⚠ Kaynak: {source.name}"
+                    f" | Scraper: '{source.scraper}' bulunamadı."
                 )
 
                 continue
 
-            news = scraper()
+            scraper_type = get_scraper_type(source.scraper)
+
+            print(
+                f"▶ {source.name}"
+                f" [{scraper_type}]"
+            )
+
+            # Generic RSS
+            if source.scraper == "RSS":
+
+                news = scraper(
+                    url=source.rss_url,
+                    source_name=source.name,
+                )
+
+            else:
+
+                news = scraper()
 
             new_news = save_news(news)
 
@@ -71,8 +97,8 @@ def update_news():
             )
 
             print(
-                f"❌ Kaynak: {source.name} | "
-                f"Hata: {str(e)}"
+                f"❌ Kaynak: {source.name}"
+                f" | {str(e)}"
             )
 
     print("\n----------------------------------------")

@@ -49,6 +49,27 @@ class Source(Base):
     )
 
     # ==========================
+    # Sprint 15.1
+    # Kaynak Tipi
+    # ==========================
+
+    source_type = Column(
+        String(30),
+        default="editorial",
+        nullable=False,
+    )
+
+    brand = Column(
+        String(100),
+    )
+
+    is_oem = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    # ==========================
     # Yönetim
     # ==========================
 

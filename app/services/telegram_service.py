@@ -7,7 +7,7 @@ from app.config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 # Mesaj Gönder
 # ==========================================================
 
-def send_telegram_message(text):
+def send_telegram_message(text) -> bool:
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
@@ -28,6 +28,7 @@ def send_telegram_message(text):
         if response.status_code == 200:
 
             print("📨 Telegram mesajı gönderildi.")
+            return True
 
         else:
 
@@ -35,6 +36,7 @@ def send_telegram_message(text):
                 "❌ Telegram Hatası:",
                 response.text,
             )
+            return False
 
     except Exception as e:
 
@@ -42,13 +44,14 @@ def send_telegram_message(text):
             "❌ Telegram Exception:",
             e,
         )
+        return False
 
 
 # ==========================================================
 # Fotoğraflı Mesaj Gönder
 # ==========================================================
 
-def send_telegram_photo(photo_url, caption):
+def send_telegram_photo(photo_url, caption) -> bool:
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
 
@@ -69,6 +72,7 @@ def send_telegram_photo(photo_url, caption):
         if response.status_code == 200:
 
             print("🖼️ Telegram fotoğrafı gönderildi.")
+            return True
 
         else:
 
@@ -78,7 +82,7 @@ def send_telegram_photo(photo_url, caption):
             )
 
             # Fotoğraf gönderilemezse normal mesaj gönder
-            send_telegram_message(caption)
+            return send_telegram_message(caption)
 
     except Exception as e:
 
@@ -88,4 +92,4 @@ def send_telegram_photo(photo_url, caption):
         )
 
         # Hata olursa yine mesaj gönder
-        send_telegram_message(caption)
+        return send_telegram_message(caption)

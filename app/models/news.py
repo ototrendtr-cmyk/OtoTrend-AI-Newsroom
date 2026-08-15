@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -48,18 +48,16 @@ class News(Base):
     # ==========================
     # AI Alanları
     # ==========================
-    ai_model = Column(
-        String(100)
-    )
 
-    ai_keywords = Column(
-        Text
-    )
+    ai_model = Column(String(100))
+
+    ai_keywords = Column(Text)
 
     ai_confidence = Column(
         Integer,
         default=0,
     )
+
     instagram_title = Column(Text)
 
     instagram_caption = Column(Text)
@@ -67,11 +65,13 @@ class News(Base):
     hashtags = Column(Text)
 
     image_prompt = Column(Text)
+
     # ==========================
     # İçerik
     # ==========================
 
     content = Column(Text)
+
     # ==========================
     # Analiz
     # ==========================
@@ -119,6 +119,7 @@ class News(Base):
     # ==========================
 
     editor_note = Column(Text)
+
     # ==========================
     # Görseller
     # ==========================
@@ -145,20 +146,21 @@ class News(Base):
         Boolean,
         default=False,
     )
+
     # ==========================
     # Sistem
     # ==========================
 
     created_at = Column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
     )
 
     updated_at = Column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )

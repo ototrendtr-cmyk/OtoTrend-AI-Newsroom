@@ -16,8 +16,33 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
+# ==========================================================
+# Authentication Helper
+# ==========================================================
+
+def check_auth(request: Request):
+
+    if not request.session.get("authenticated"):
+
+        return RedirectResponse(
+            url="/login",
+            status_code=303,
+        )
+
+    return None
+
+
+# ==========================================================
+# Source List
+# ==========================================================
+
 @router.get("/sources")
 def sources_page(request: Request):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     sources = list_sources()
 
@@ -31,8 +56,17 @@ def sources_page(request: Request):
     )
 
 
+# ==========================================================
+# New Source
+# ==========================================================
+
 @router.get("/sources/new")
 def new_source_page(request: Request):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     return templates.TemplateResponse(
         request=request,
@@ -45,11 +79,17 @@ def new_source_page(request: Request):
 
 @router.post("/sources/new")
 def create_source_page(
+    request: Request,
     name: str = Form(...),
     rss_url: str = Form(...),
     website: str = Form(""),
     scraper: str = Form(...),
 ):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     create_new_source(
         name=name,
@@ -64,11 +104,20 @@ def create_source_page(
     )
 
 
+# ==========================================================
+# Edit Source
+# ==========================================================
+
 @router.get("/sources/{source_id}/edit")
 def edit_source_page(
     request: Request,
     source_id: int,
 ):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     source = get_source_by_id(source_id)
 
@@ -91,6 +140,7 @@ def edit_source_page(
 
 @router.post("/sources/{source_id}/edit")
 def edit_source(
+    request: Request,
     source_id: int,
     name: str = Form(...),
     rss_url: str = Form(...),
@@ -99,6 +149,11 @@ def edit_source(
     priority: int = Form(1),
     enabled: str | None = Form(None),
 ):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     update_existing_source(
         source_id=source_id,
@@ -116,8 +171,20 @@ def edit_source(
     )
 
 
+# ==========================================================
+# Delete Source
+# ==========================================================
+
 @router.post("/sources/{source_id}/delete")
-def delete_source_page(source_id: int):
+def delete_source_page(
+    request: Request,
+    source_id: int,
+):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     remove_source(source_id)
 
@@ -127,8 +194,17 @@ def delete_source_page(source_id: int):
     )
 
 
+# ==========================================================
+# Enabled Sources Test
+# ==========================================================
+
 @router.get("/test-enabled-sources")
-def test_enabled_sources():
+def test_enabled_sources(request: Request):
+
+    auth = check_auth(request)
+
+    if auth:
+        return auth
 
     sources = get_enabled_sources()
 

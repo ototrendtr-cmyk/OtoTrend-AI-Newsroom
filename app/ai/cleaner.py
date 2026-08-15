@@ -4,7 +4,6 @@ import unicodedata
 
 from app.config import MAX_CONTENT_LENGTH
 
-
 SCRIPT_RE = re.compile(
     r"<script.*?>.*?</script>",
     re.IGNORECASE | re.DOTALL,
@@ -23,36 +22,36 @@ WHITESPACE_RE = re.compile(
     r"\s+",
 )
 
+# Gereksiz satırlar
+NOISE_PATTERNS = [
+    r"Read more.*",
+    r"Continue reading.*",
+    r"Originally published.*",
+    r"Advertisement.*",
+    r"Source:.*",
+    r"All rights reserved.*",
+    r"©.*",
+]
+
 
 def clean_text(text: str | None) -> str:
     """
     AI'ya gönderilecek metni temizler.
-
-    Yapılan işlemler:
-
-    - None kontrolü
-    - Script kaldırılır
-    - Style kaldırılır
-    - HTML tag'leri kaldırılır
-    - HTML entity decode edilir
-    - Unicode normalize edilir
-    - Gereksiz boşluklar temizlenir
-    - Maksimum karakter sınırı uygulanır
     """
 
     if not text:
         return ""
 
-    # HTML entity düzelt
+    # HTML entity
     text = html.unescape(text)
 
-    # Script kaldır
+    # Script
     text = SCRIPT_RE.sub("", text)
 
-    # Style kaldır
+    # Style
     text = STYLE_RE.sub("", text)
 
-    # HTML tag kaldır
+    # HTML tag
     text = TAG_RE.sub(" ", text)
 
     # Unicode normalize
@@ -61,13 +60,22 @@ def clean_text(text: str | None) -> str:
         text,
     )
 
-    # Fazla boşlukları temizle
+    # Gereksiz satırları kaldır
+    for pattern in NOISE_PATTERNS:
+        text = re.sub(
+            pattern,
+            "",
+            text,
+            flags=re.IGNORECASE,
+        )
+
+    # Fazla boşluk
     text = WHITESPACE_RE.sub(
         " ",
         text,
     ).strip()
 
-    # Maksimum uzunluk
+    # Maksimum karakter
     if len(text) > MAX_CONTENT_LENGTH:
         text = text[:MAX_CONTENT_LENGTH]
 
@@ -75,19 +83,25 @@ def clean_text(text: str | None) -> str:
 
 
 def prompt_length(text: str) -> int:
-    """
-    Prompt karakter uzunluğu.
-    """
-
     return len(text)
 
 
 def prompt_size_kb(text: str) -> float:
-    """
-    Prompt boyutu (KB).
-    """
-
     return round(
         len(text.encode("utf-8")) / 1024,
         2,
     )
+
+
+def debug_prompt(news: str, prompt: str):
+    """
+    Debug amaçlı prompt bilgisi.
+    """
+
+    print("--------------------------------")
+    print(f"News Length   : {len(news)} karakter")
+    print(f"Prompt Length : {len(prompt)} karakter")
+    print(f"Prompt Size   : {prompt_size_kb(prompt)} KB")
+    print("News Preview:")
+    print(news[:300])
+    print("--------------------------------")

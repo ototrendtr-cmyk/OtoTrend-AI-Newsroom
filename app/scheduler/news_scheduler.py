@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app.services.news_service import update_news
 from app.services.ai_worker import process_ai_news
+from app.services.retention_service import run_news_retention
 
 
 scheduler = BackgroundScheduler()
@@ -13,6 +14,7 @@ def start_scheduler():
 
     if scheduler.running:
         return
+
 
     # ==========================================================
     # RSS Haber Toplama
@@ -27,6 +29,7 @@ def start_scheduler():
         next_run_time=datetime.now(),
     )
 
+
     # ==========================================================
     # AI Worker
     # ==========================================================
@@ -34,14 +37,40 @@ def start_scheduler():
     scheduler.add_job(
         process_ai_news,
         "interval",
-        seconds=30,
-        kwargs={"limit": 1},
+        minutes=2,
+        kwargs={"limit":3},
         id="ai_job",
         replace_existing=True,
     )
 
+
+    # ==========================================================
+    # Haber arşivleme ve yedekli temizlik
+    # ==========================================================
+
+    scheduler.add_job(
+        run_news_retention,
+        "cron",
+        hour=3,
+        minute=15,
+        id="news_retention_job",
+        replace_existing=True,
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=60 * 60 * 6,
+    )
+
+
     scheduler.start()
+
 
     print("⏰ Scheduler başlatıldı.")
     print("   📰 RSS Worker : 5 dakikada bir")
-    print("   🤖 AI Worker  : 30 saniyede bir (1 haber)")
+    print("   🤖 AI Worker  : 2 dakikada bir (3 haber)")
+    print("   🗄️ Haber arşivi : her gün 03:15")
+
+
+def stop_scheduler():
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
+        print("Scheduler durduruldu.")

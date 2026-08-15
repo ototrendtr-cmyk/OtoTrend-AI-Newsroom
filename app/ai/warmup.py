@@ -1,11 +1,14 @@
 import time
 
-import ollama
-
 from app.config import (
+    OLLAMA_HOST,
     OLLAMA_KEEP_ALIVE,
     OLLAMA_MODEL,
 )
+import ollama
+
+
+client = ollama.Client(host=OLLAMA_HOST) if OLLAMA_HOST else ollama.Client()
 
 
 def warmup():
@@ -20,7 +23,7 @@ def warmup():
 
     try:
 
-        ollama.chat(
+        client.chat(
             model=OLLAMA_MODEL,
             messages=[
                 {

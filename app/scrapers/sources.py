@@ -9,6 +9,7 @@ from app.scrapers.rss.carbuzz import get_carbuzz_news
 from app.scrapers.html.log import get_log_news
 from app.scrapers.html.donanimhaber import get_donanimhaber_news
 from app.scrapers.html.kolesa import get_kolesa_news
+from app.scrapers.rss.cnevpost import get_cnevpost_news
 
 SOURCES = [
     get_motor1_news,

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.database.database import SessionLocal
 from app.models.source import Source
 
@@ -9,6 +11,10 @@ def create_source(
     scraper="rss",
     language="en",
     country="Global",
+    source_type="editorial",
+    brand=None,
+    is_oem=False,
+    enabled=True,
 ):
     db = SessionLocal()
 
@@ -29,6 +35,10 @@ def create_source(
             scraper=scraper,
             language=language,
             country=country,
+            source_type=source_type,
+            brand=brand,
+            is_oem=is_oem,
+            enabled=enabled,
         )
 
         db.add(source)
@@ -39,6 +49,8 @@ def create_source(
 
     finally:
         db.close()
+
+
 def get_all_sources():
 
     db = SessionLocal()
@@ -68,6 +80,7 @@ def get_source(source_id):
     finally:
         db.close()
 
+
 def update_source(
     source_id,
     name,
@@ -76,6 +89,9 @@ def update_source(
     scraper,
     enabled,
     priority,
+    source_type="editorial",
+    brand=None,
+    is_oem=False,
 ):
 
     db = SessionLocal()
@@ -97,6 +113,9 @@ def update_source(
         source.scraper = scraper
         source.enabled = enabled
         source.priority = priority
+        source.source_type = source_type
+        source.brand = brand
+        source.is_oem = is_oem
 
         db.commit()
         db.refresh(source)
@@ -106,6 +125,7 @@ def update_source(
     finally:
 
         db.close()
+
 
 def delete_source(source_id):
 
@@ -129,12 +149,11 @@ def delete_source(source_id):
 
     finally:
 
-        db.close()        
-
-from datetime import datetime
+        db.close()
 
 
 def mark_source_run(source_name: str):
+
     db = SessionLocal()
 
     try:
@@ -168,7 +187,7 @@ def mark_source_success(source_name: str, news_count: int):
         if source:
 
             source.last_success = datetime.utcnow()
-            source.success_count += 1
+            source.success_count += news_count
             source.total_news += news_count
             source.last_error = None
 
@@ -199,4 +218,4 @@ def mark_source_error(source_name: str, error_message: str):
             db.commit()
 
     finally:
-        db.close()        
+        db.close()

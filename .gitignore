@@ -9,6 +9,8 @@ venv/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
 news.db
 
 # Environment
@@ -20,6 +22,12 @@ news.db
 
 # Logs
 *.log
+
+# Runtime outputs and local troubleshooting files
+app/static/generated/
+backups/
+*_debug.html
+fix_autoexpress.py
 
 # OS
 .DS_Store

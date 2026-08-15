@@ -1,39 +1,18 @@
 import time
 
-from app.ai.cleaner import clean_text, prompt_size_kb
+from app.ai.cleaner import (
+    clean_text,
+    prompt_size_kb,
+    debug_prompt,
+)
 from app.ai.provider import chat
 from app.ai.parser import parse_json
 
 
 PROMPT_TEMPLATE = """
-Türkçe otomotiv editörü olarak aşağıdaki haberi analiz et.
+Haberi analiz et.
 
-Kurallar:
-- title_tr: Akıcı Türkçe başlık.
-- summary_tr: En fazla 2 cümle.
-- brand: Sadece marka.
-- model: Sadece model.
-- importance: 1-10.
-
-category sadece şu değerlerden biri olabilir:
-
-EV
-Hybrid
-ICE
-SUV
-Sedan
-Hatchback
-Pickup
-Battery
-Charging
-Software
-Recall
-Factory
-Motorsport
-Financial
-Other
-
-Sadece JSON döndür.
+Sadece geçerli JSON döndür.
 
 {{
   "title_tr":"",
@@ -44,6 +23,14 @@ Sadece JSON döndür.
   "importance":0
 }}
 
+Kurallar:
+
+- title_tr: Türkçe başlık
+- summary_tr: En fazla 2 cümle
+- brand: Marka
+- model: Model
+- category: EV, Hybrid, ICE, SUV, Sedan, Hatchback, Pickup, Battery, Charging, Software, Recall, Factory, Motorsport, Financial, Other
+- importance: 1-10
 
 Haber:
 
@@ -71,6 +58,12 @@ def process(news: str):
 
     prompt = PROMPT_TEMPLATE.format(
         news=news,
+    )
+
+    # DEBUG
+    debug_prompt(
+        news,
+        prompt,
     )
 
     metrics["prompt_time"] = (

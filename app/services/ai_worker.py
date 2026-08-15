@@ -1,7 +1,9 @@
+from datetime import UTC, datetime
 from time import perf_counter
 
 from app.ai.logger import AILogger
 from app.ai.provider import OLLAMA_MODEL
+from app.config import TELEGRAM_NOTIFY_AFTER
 from app.ai.stats import (
     add_failure,
     add_success,
@@ -17,6 +19,31 @@ from app.services.telegram_service import (
     send_telegram_message,
     send_telegram_photo,
 )
+
+
+def _should_send_telegram(news: News) -> bool:
+    """Yalnızca etkinleştirmeden sonra eklenen haberleri bildirir."""
+    if news.telegram_sent or not TELEGRAM_NOTIFY_AFTER:
+        return False
+
+    try:
+        cutoff = datetime.fromisoformat(
+            TELEGRAM_NOTIFY_AFTER.replace("Z", "+00:00")
+        )
+    except ValueError:
+        print("⚠️ TELEGRAM_NOTIFY_AFTER geçersiz; Telegram bildirimi atlandı.")
+        return False
+
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=UTC)
+
+    created_at = news.created_at
+    if created_at is None:
+        return False
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=UTC)
+
+    return created_at >= cutoff
 
 
 def process_ai_news(limit: int = 1):
@@ -40,7 +67,12 @@ def process_ai_news(limit: int = 1):
 
                 db.query(News)
 
-                .filter(News.ai_processed == False)
+                .filter(
+                    News.ai_processed == False,
+                    News.status.in_(["new", "ai_pending", "ai_error"]),
+                )
+
+                .order_by(News.created_at.desc())
 
                 .limit(limit)
 
@@ -54,10 +86,8 @@ def process_ai_news(limit: int = 1):
 
         db.close()
 
+    # İşlenecek haber yoksa sessizce çık
     if not news_ids:
-
-        print("🤖 AI: İşlenecek haber bulunamadı.")
-
         return
 
     print(f"🤖 AI: {len(news_ids)} haber işleniyor...")
@@ -195,24 +225,28 @@ def process_ai_news(limit: int = 1):
                 f"🔗 {news.link}"
 
             )
+
             # ==================================================
             # Telegram Gönder
             # ==================================================
 
             telegram_start = perf_counter()
+            telegram_sent = False
 
-            if news.image_url:
+            if _should_send_telegram(news):
+                if news.image_url:
+                    telegram_sent = send_telegram_photo(
+                        news.image_url,
+                        message,
+                    )
+                else:
+                    telegram_sent = send_telegram_message(message)
 
-                send_telegram_photo(
-                    news.image_url,
-                    message,
-                )
-
+                if telegram_sent:
+                    news.telegram_sent = True
+                    db.commit()
             else:
-
-                send_telegram_message(
-                    message,
-                )
+                print("ℹ️ Telegram atlandı: haber bildirim başlangıcından önce eklenmiş.")
 
             logger.set_telegram_time(
                 perf_counter() - telegram_start
