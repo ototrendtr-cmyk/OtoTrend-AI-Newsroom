@@ -7,6 +7,7 @@ from app.database.source_crud import (
     create_source,
     update_source,
     delete_source,
+    enable_source,
 )
 
 
@@ -74,3 +75,7 @@ def update_existing_source(
 
 def remove_source(source_id: int):
     return delete_source(source_id)
+
+
+def enable_existing_source(source_id: int):
+    return enable_source(source_id)

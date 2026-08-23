@@ -1,9 +1,16 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from time import perf_counter
+
+from sqlalchemy import or_
 
 from app.ai.logger import AILogger
 from app.ai.provider import OLLAMA_MODEL
-from app.config import TELEGRAM_NOTIFY_AFTER
+from app.config import (
+    AI_MAX_ATTEMPTS,
+    AI_QUEUE_MAX_AGE_HOURS,
+    AI_RETRY_DELAY_MINUTES,
+    TELEGRAM_NOTIFY_AFTER,
+)
 from app.ai.stats import (
     add_failure,
     add_success,
@@ -18,6 +25,11 @@ from app.ai.pipeline import process
 from app.services.telegram_service import (
     send_telegram_message,
     send_telegram_photo,
+)
+from app.services.ai_queue_service import (
+    ACTIVE_AI_STATUSES,
+    refresh_ai_queue,
+    review_status_for_importance,
 )
 
 
@@ -51,6 +63,10 @@ def process_ai_news(limit: int = 1):
     AI tarafından işlenmemiş haberleri işler.
     """
 
+    refresh_ai_queue()
+    current_time = datetime.now(UTC)
+    queue_cutoff = current_time - timedelta(hours=AI_QUEUE_MAX_AGE_HOURS)
+
     # ==========================================================
     # İşlenecek Haberleri Bul
     # ==========================================================
@@ -69,7 +85,12 @@ def process_ai_news(limit: int = 1):
 
                 .filter(
                     News.ai_processed == False,
-                    News.status.in_(["new", "ai_pending", "ai_error"]),
+                    News.status.in_(ACTIVE_AI_STATUSES),
+                    News.created_at >= queue_cutoff,
+                    or_(
+                        News.ai_next_retry_at.is_(None),
+                        News.ai_next_retry_at <= current_time,
+                    ),
                 )
 
                 .order_by(News.created_at.desc())
@@ -101,6 +122,7 @@ def process_ai_news(limit: int = 1):
         db = SessionLocal()
 
         logger = AILogger()
+        news = None
 
         logger.set_news(news_id)
 
@@ -184,13 +206,13 @@ def process_ai_news(limit: int = 1):
 
             )
 
-            news.importance = result.get(
-
-                "importance"
-
-            )
+            news.importance = result.get("importance")
 
             news.ai_processed = True
+            news.ai_attempts = 0
+            news.ai_last_error = None
+            news.ai_next_retry_at = None
+            news.status = review_status_for_importance(news.importance)
 
             db_start = perf_counter()
 
@@ -280,6 +302,35 @@ def process_ai_news(limit: int = 1):
             db.rollback()
 
             add_failure()
+
+            if news is not None:
+                attempts = int(news.ai_attempts or 0) + 1
+                news.ai_attempts = attempts
+                news.ai_last_error = str(e)[:1000]
+                news.updated_at = datetime.now(UTC)
+
+                if attempts >= AI_MAX_ATTEMPTS:
+                    news.status = "ai_failed"
+                    news.ai_next_retry_at = None
+                    print(
+                        "ℹ️ AI otomatik deneme sınırına ulaştı: "
+                        f"haber #{news_id} editörün manuel incelemesine bırakıldı."
+                    )
+                else:
+                    delay_minutes = AI_RETRY_DELAY_MINUTES * (2 ** (attempts - 1))
+                    news.status = "ai_error"
+                    news.ai_next_retry_at = datetime.now(UTC) + timedelta(
+                        minutes=delay_minutes
+                    )
+                    print(
+                        "ℹ️ AI yeniden deneme planlandı: "
+                        f"haber #{news_id}, {delay_minutes} dakika sonra."
+                    )
+
+                try:
+                    db.commit()
+                except Exception:
+                    db.rollback()
 
             print()
 

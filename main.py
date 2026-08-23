@@ -18,6 +18,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.ai.warmup import warmup
 from app.config import RUN_SCHEDULER, SECRET_KEY
 from app.database.database import Base, engine
+from app.database.schema import ensure_database_upgrades
 from app.database.source_seed import seed_sources
 from app.scheduler.news_scheduler import start_scheduler, stop_scheduler
 
@@ -47,6 +48,7 @@ from app.api.ai import router as ai_router
 load_dotenv()
 
 Base.metadata.create_all(bind=engine)
+ensure_database_upgrades()
 
 
 @asynccontextmanager

@@ -132,13 +132,31 @@ Instagram Editörü | OtoTrend AI Newsroom
                 class="alert alert-info mt-3 mb-0 d-none">
 
                 <span
+                    id="instagramAIStatusSpinner"
                     class="spinner-border spinner-border-sm me-2"
                     role="status"
                     aria-hidden="true">
                 </span>
 
-                AI metni hazırlıyor ve Instagram görselini oluşturuyor...
-                Bu işlem biraz sürebilir.
+                <span id="instagramAIStatusText">
+                    AI metni hazırlıyor ve Instagram görselini oluşturuyor...
+                    Bu işlem biraz sürebilir.
+                </span>
+
+                <div
+                    class="progress mt-2"
+                    style="height: 7px;"
+                    aria-label="Instagram taslak üretim ilerlemesi">
+                    <div
+                        id="instagramAIProgress"
+                        class="progress-bar progress-bar-striped progress-bar-animated"
+                        role="progressbar"
+                        style="width: 0%"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="0">
+                    </div>
+                </div>
 
             </div>
 
@@ -208,7 +226,7 @@ Instagram Editörü | OtoTrend AI Newsroom
                 </div>
                 <a
                     id="visualSourceLink"
-    c           class="small d-inline-block mt-2 {% if not visual_image.source_url %}d-none{% endif %}"
+                    class="small d-inline-block mt-2 {% if not visual_image.source_url %}d-none{% endif %}"
                     href="{{ visual_image.source_url or '#' }}"
                     target="_blank"
                     rel="noopener noreferrer">
@@ -637,6 +655,21 @@ document.addEventListener(
                 "instagramAIStatus"
             );
 
+        const statusText =
+            document.getElementById(
+                "instagramAIStatusText"
+            );
+
+        const statusSpinner =
+            document.getElementById(
+                "instagramAIStatusSpinner"
+            );
+
+        const progressBar =
+            document.getElementById(
+                "instagramAIProgress"
+            );
+
         const titleField =
             document.getElementById(
                 "instagram_title"
@@ -897,6 +930,115 @@ document.addEventListener(
         }
 
 
+        function setGenerationStatus(job, variant) {
+
+            const progress = Math.max(
+                0,
+                Math.min(100, Number(job?.progress) || 0)
+            );
+
+            statusBox?.classList.remove("d-none");
+            statusBox?.classList.remove(
+                "alert-info",
+                "alert-success",
+                "alert-danger"
+            );
+            statusBox?.classList.add(
+                variant === "success" ? "alert-success" :
+                variant === "danger" ? "alert-danger" :
+                "alert-info"
+            );
+
+            if (statusText) {
+                statusText.textContent = job?.message || "İşlem hazırlanıyor.";
+            }
+
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute("aria-valuenow", String(progress));
+                progressBar.classList.toggle(
+                    "progress-bar-animated",
+                    variant === "info"
+                );
+            }
+
+            statusSpinner?.classList.toggle(
+                "d-none",
+                variant !== "info"
+            );
+
+        }
+
+
+        function fillGeneratedDraft(data) {
+
+            titleField.value = data.instagram_title || "";
+            captionField.value = data.instagram_caption || "";
+            hashtagsField.value = data.hashtags || "";
+            imagePromptField.value = data.image_prompt || "";
+
+            renderVisualGuide(data);
+            updateCaptionCounter();
+
+        }
+
+
+        function waitForJobUpdate() {
+            return new Promise(function (resolve) {
+                window.setTimeout(resolve, 1000);
+            });
+        }
+
+
+        async function waitForInstagramJob(job) {
+
+            let currentJob = job;
+
+            for (let attempt = 0; attempt < 900; attempt += 1) {
+
+                setGenerationStatus(currentJob, "info");
+
+                const response = await fetch(
+                    `/instagram/jobs/${currentJob.id}`,
+                    {
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    }
+                );
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    throw new Error(
+                        payload.message || "İşlem durumu alınamadı."
+                    );
+                }
+
+                currentJob = payload.job;
+
+                if (currentJob.status === "completed") {
+                    setGenerationStatus(currentJob, "success");
+                    return currentJob.result;
+                }
+
+                if (currentJob.status === "failed") {
+                    setGenerationStatus(currentJob, "danger");
+                    throw new Error(
+                        currentJob.message || "Instagram taslağı oluşturulamadı."
+                    );
+                }
+
+                await waitForJobUpdate();
+
+            }
+
+            throw new Error(
+                "İşlem beklenenden uzun sürdü. Sayfayı yenileyip taslağı kontrol edin."
+            );
+
+        }
+
+
         /*
          * ==============================================
          * AI GENERATE
@@ -917,11 +1059,14 @@ document.addEventListener(
 
                 generateButton.innerHTML =
                     '<span class="spinner-border spinner-border-sm me-1"></span>' +
-                    'AI Oluşturuyor...';
+                    'İşlem Kuyrukta...';
 
-
-                statusBox?.classList.remove(
-                    "d-none"
+                setGenerationStatus(
+                    {
+                        progress: 5,
+                        message: "Instagram taslağı kuyruğa alınıyor."
+                    },
+                    "info"
                 );
 
 
@@ -929,7 +1074,7 @@ document.addEventListener(
 
                     const response =
                         await fetch(
-                            "/instagram/{{ news.id }}/generate",
+                            "/instagram/{{ news.id }}/generate/start",
                             {
                                 method: "POST",
 
@@ -956,32 +1101,8 @@ document.addEventListener(
                     }
 
 
-                    /*
-                     * ==================================
-                     * ALANLARI DOLDUR
-                     * ==================================
-                     */
-
-                    titleField.value =
-                        data.data.instagram_title ||
-                        "";
-
-                    captionField.value =
-                        data.data.instagram_caption ||
-                        "";
-
-                    hashtagsField.value =
-                        data.data.hashtags ||
-                        "";
-
-                    imagePromptField.value =
-                        data.data.image_prompt ||
-                        "";
-
-                    renderVisualGuide(data.data);
-
-
-                    updateCaptionCounter();
+                    const draft = await waitForInstagramJob(data.job);
+                    fillGeneratedDraft(draft.data);
 
 
                     /*
@@ -997,7 +1118,7 @@ document.addEventListener(
 
                         showToast(
                             "Başarılı",
-                            data.message ||
+                            draft.message ||
                             "Instagram taslağı oluşturuldu.",
                             "success"
                         );
@@ -1017,6 +1138,15 @@ document.addEventListener(
                     console.error(
                         "❌ Instagram AI:",
                         error
+                    );
+
+                    setGenerationStatus(
+                        {
+                            progress: 100,
+                            message: error.message ||
+                                "Instagram içeriği oluşturulamadı."
+                        },
+                        "danger"
                     );
 
 
@@ -1049,10 +1179,6 @@ document.addEventListener(
 
                     generateButton.disabled =
                         false;
-
-                    statusBox?.classList.add(
-                        "d-none"
-                    );
 
                 }
 

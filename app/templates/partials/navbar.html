@@ -1,3 +1,4 @@
+{% set current_path = request.url.path %}
 <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm px-4 py-3">
 
     <div class="container-fluid">
@@ -8,7 +9,19 @@
 
             <h4 class="fw-bold mb-0">
 
-                Dashboard
+                {% if current_path.startswith('/editor') or current_path.startswith('/news/') %}
+                    Haberler
+                {% elif current_path.startswith('/instagram') %}
+                    Instagram
+                {% elif current_path.startswith('/sources') %}
+                    RSS Kaynakları
+                {% elif current_path.startswith('/analytics') %}
+                    Analitik
+                {% elif current_path.startswith('/settings') %}
+                    Ayarlar
+                {% else %}
+                    Dashboard
+                {% endif %}
 
             </h4>
 

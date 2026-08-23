@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import datetime
 
@@ -8,6 +9,11 @@ from app.ai.editorial_validator import (
     format_validation_notes,
     validate_instagram_draft,
 )
+from app.ai.turkish_quality import (
+    normalize_instagram_draft,
+    validate_turkish_instagram_draft,
+)
+from app.config import AI_TURKISH_QUALITY_RETRIES
 
 
 PROMPT_TEMPLATE = """
@@ -31,6 +37,12 @@ METİN ALANLARI:
 - editor_note kişisel görüş içermeyen tek kısa cümle; question tek açık uçlu
   soru olsun.
 - hashtags en fazla 8 adet ve mutlaka #OtoTrendTR içersin.
+- Reklam, övgü, vaat, duygusal anlatım veya tahmin kullanma. "heyecan verici",
+  "efsanevi", "hayaller", "büyüleyecek", "hazır mısınız" gibi ifadeleri
+  yazma. Her cümle yalnızca HABER'de doğrulanabilen nesnel bilgi içersin.
+- Tüm metin alanları doğal ve akıcı Türkçe olmalı; bozuk karakter, İngilizce
+  kalıntı veya yabancı harf kullanma. Marka, model ve resmî etkinlik adı hariç
+  yabancı kelime kullanma.
 - Türkiye elektrikli araç/mevzuat iddiası varsa validation_notes'a
   "Mevzuat ve vergi oranı editör tarafından resmi kaynaktan doğrulanmalı." ekle.
 
@@ -131,6 +143,51 @@ def _normalize_hashtags(value: object) -> str:
     return " ".join(tags[:8])
 
 
+def _normalize_model_draft(result: dict[str, object]) -> dict[str, object]:
+    """Zorunlu alanları kontrol eder ve model metnini kayda hazırlamadan temizler."""
+    required_fields = (
+        "instagram_title",
+        "photo_direction",
+        "intro",
+        "details",
+        "editor_note",
+        "question",
+        "hashtags",
+    )
+    for field in required_fields:
+        if field not in result:
+            raise ValueError(f"Instagram AI çıktısında eksik alan: {field}")
+
+    normalized = normalize_instagram_draft(result)
+    normalized["details"] = _details(normalized["details"])
+    normalized["hashtags"] = _normalize_hashtags(normalized["hashtags"])
+    return normalized
+
+
+def _quality_retry_prompt(
+    prompt: str,
+    errors: list[str],
+    draft: dict[str, object],
+) -> str:
+    previous_draft = json.dumps(
+        {
+            "instagram_title": draft.get("instagram_title", ""),
+            "intro": draft.get("intro", ""),
+            "details": draft.get("details", []),
+            "editor_note": draft.get("editor_note", ""),
+        },
+        ensure_ascii=False,
+    )
+    return (
+        prompt
+        + "\nÖnceki taslak:\n"
+        + previous_draft
+        + "\nBu taslak kabul edilmedi: "
+        + "; ".join(errors)
+        + ". Yalnızca doğrulanabilir, akıcı ve nesnel Türkçe ile yeniden yaz."
+    )
+
+
 def _visual_brief(
     headline: str,
     photo_direction: str,
@@ -207,80 +264,55 @@ def process_instagram(
     )
 
     # ==========================================================
-    # OLLAMA
+    # AI + TÜRKÇE KALİTE DENETİMİ
     # ==========================================================
 
     start = time.perf_counter()
+    result = None
+    candidate: dict[str, object] = {}
+    quality_errors: list[str] = []
 
-    response = instagram_chat(
-        prompt,
-    )
+    for attempt in range(AI_TURKISH_QUALITY_RETRIES + 1):
+        request_prompt = prompt if attempt == 0 else _quality_retry_prompt(
+            prompt,
+            quality_errors,
+            candidate,
+        )
+        response = instagram_chat(request_prompt)
+        metrics["response_kb"] = round(
+            len(response.encode("utf-8")) / 1024,
+            2,
+        )
 
-    metrics["ollama_time"] = (
-        time.perf_counter() - start
-    )
+        # Emoji içeren yanıtı bazı Windows konsollarına ham biçimde yazmak
+        # UnicodeEncodeError oluşturabilir. İçeriği değil yalnızca boyutu günlüğe al.
+        print("Instagram AI yanıtı alındı " f"({len(response)} karakter).")
 
-    metrics["response_kb"] = round(
-        len(response.encode("utf-8")) / 1024,
-        2,
-    )
-
-    # ==========================================================
-    # DEBUG
-    # ==========================================================
-
-    # Emoji içeren yanıtı bazı Windows konsollarına ham biçimde yazmak
-    # UnicodeEncodeError oluşturabilir. İçeriği değil yalnızca boyutu günlüğe al.
-    print(
-        "Instagram AI yanıtı alındı "
-        f"({len(response)} karakter)."
-    )
-
-    # ==========================================================
-    # JSON PARSE
-    # ==========================================================
-
-    start = time.perf_counter()
-
-    result = parse_json(
-        response,
-    )
-
-    metrics["parse_time"] = (
-        time.perf_counter() - start
-    )
-
-    # ==========================================================
-    # SONUÇ KONTROLÜ
-    # ==========================================================
-
-    required_fields = (
-        "instagram_title",
-        "photo_direction",
-        "intro",
-        "details",
-        "editor_note",
-        "question",
-        "hashtags",
-    )
-
-    for field in required_fields:
-
-        if field not in result:
-
-            raise ValueError(
-                f"Instagram AI çıktısında eksik alan: {field}"
-            )
-
-        if field == "details":
+        parse_start = time.perf_counter()
+        try:
+            candidate = _normalize_model_draft(parse_json(response))
+        except ValueError as exc:
+            metrics["parse_time"] += time.perf_counter() - parse_start
+            quality_errors = [str(exc)]
             continue
+        metrics["parse_time"] += time.perf_counter() - parse_start
 
-        result[field] = _short_text(result[field])
+        quality_errors = validate_turkish_instagram_draft(candidate)
+        if not quality_errors:
+            result = candidate
+            break
 
-    result["details"] = _details(result["details"])
+    metrics["ollama_time"] = time.perf_counter() - start
+    metrics["quality_attempts"] = attempt + 1
+
+    if result is None:
+        raise ValueError(
+            "Instagram Türkçe kalite kontrolünden geçemedi: "
+            + "; ".join(quality_errors)
+        )
+
     source_name = source_name.strip() or "Resmi kaynak"
     source_date = _source_date(published_at)
-    result["hashtags"] = _normalize_hashtags(result["hashtags"])
     result["instagram_caption"] = _compose_caption(
         title=result["instagram_title"],
         intro=result["intro"],

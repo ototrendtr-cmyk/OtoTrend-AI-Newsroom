@@ -15,6 +15,8 @@ router = APIRouter()
 STATUS_OPTIONS = (
     ("new", "Yeni"),
     ("ai_pending", "AI bekliyor"),
+    ("ai_processed", "AI işlendi"),
+    ("ai_skipped", "AI atlandı"),
     ("ai_ready", "AI hazır"),
     ("editor_review", "Editör incelemesi"),
     ("instagram_draft", "Instagram taslağı"),

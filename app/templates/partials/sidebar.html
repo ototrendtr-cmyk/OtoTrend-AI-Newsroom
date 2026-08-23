@@ -1,3 +1,4 @@
+{% set current_path = request.url.path %}
 <aside class="sidebar">
 
     <div class="sidebar-header">
@@ -27,7 +28,7 @@
 
     <nav class="sidebar-menu">
 
-        <a href="/dashboard" class="menu-item">
+        <a href="/dashboard" class="menu-item {% if current_path == '/' or current_path.startswith('/dashboard') %}active{% endif %}">
 
             <i class="bi bi-speedometer2"></i>
 
@@ -35,7 +36,7 @@
 
         </a>
 
-        <a href="/editor" class="menu-item">
+        <a href="/editor" class="menu-item {% if current_path.startswith('/editor') or current_path.startswith('/news/') %}active{% endif %}">
 
             <i class="bi bi-newspaper"></i>
 
@@ -43,7 +44,7 @@
 
         </a>
 
-        <a href="/ai" class="menu-item">
+        <a href="/ai" class="menu-item {% if current_path == '/ai' %}active{% endif %}">
 
             <i class="bi bi-robot"></i>
 
@@ -51,7 +52,7 @@
 
         </a>
 
-        <a href="/images" class="menu-item">
+        <a href="/images" class="menu-item {% if current_path.startswith('/images') %}active{% endif %}">
 
             <i class="bi bi-image"></i>
 
@@ -59,7 +60,7 @@
 
         </a>
 
-        <a href="/instagram" class="menu-item">
+        <a href="/instagram" class="menu-item {% if current_path.startswith('/instagram') %}active{% endif %}">
 
             <i class="bi bi-instagram"></i>
 
@@ -67,7 +68,7 @@
 
         </a>
 
-        <a href="/telegram" class="menu-item">
+        <a href="/telegram" class="menu-item {% if current_path.startswith('/telegram') %}active{% endif %}">
 
             <i class="bi bi-telegram"></i>
 
@@ -75,7 +76,7 @@
 
         </a>
 
-        <a href="/scheduler" class="menu-item">
+        <a href="/scheduler" class="menu-item {% if current_path.startswith('/scheduler') %}active{% endif %}">
 
             <i class="bi bi-calendar-event"></i>
 
@@ -83,7 +84,7 @@
 
         </a>
 
-        <a href="/sources" class="menu-item">
+        <a href="/sources" class="menu-item {% if current_path.startswith('/sources') %}active{% endif %}">
 
             <i class="bi bi-rss"></i>
 
@@ -91,7 +92,7 @@
 
         </a>
 
-        <a href="/analytics" class="menu-item">
+        <a href="/analytics" class="menu-item {% if current_path.startswith('/analytics') %}active{% endif %}">
 
             <i class="bi bi-bar-chart"></i>
 
@@ -99,7 +100,7 @@
 
         </a>
 
-        <a href="/settings" class="menu-item">
+        <a href="/settings" class="menu-item {% if current_path.startswith('/settings') %}active{% endif %}">
 
             <i class="bi bi-gear"></i>
 

@@ -25,11 +25,11 @@
                             Başlık
                         </th>
 
-                        <th width="120">
+                        <th class="editor-optional-column" width="120">
                             Marka
                         </th>
 
-                        <th width="140">
+                        <th class="editor-optional-column" width="140">
                             Kategori
                         </th>
 
@@ -45,7 +45,7 @@
                             Önem
                         </th>
 
-                        <th width="180">
+                        <th class="editor-optional-column" width="180">
                             Tarih
                         </th>
 
@@ -155,7 +155,7 @@
 
                         <!-- MARKA -->
 
-                        <td>
+                        <td class="editor-optional-column">
 
                             {% if news.brand %}
 
@@ -179,7 +179,7 @@
 
                         <!-- KATEGORİ -->
 
-                        <td>
+                        <td class="editor-optional-column">
 
                             {% if news.category %}
 
@@ -224,6 +224,18 @@
 
                                 <span class="badge bg-warning text-dark">
                                     AI Bekliyor
+                                </span>
+
+                            {% elif news.status == "ai_error" %}
+
+                                <span class="badge bg-warning text-dark">
+                                    AI Yeniden Denenecek
+                                </span>
+
+                            {% elif news.status == "ai_failed" %}
+
+                                <span class="badge bg-danger">
+                                    AI Manuel Kontrol
                                 </span>
 
                             {% elif news.status == "ai_ready" %}
@@ -324,7 +336,7 @@
 
                         <!-- TARİH -->
 
-                        <td>
+                        <td class="editor-optional-column">
 
                             {% if news.published_at %}
 

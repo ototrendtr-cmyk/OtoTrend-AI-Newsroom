@@ -27,6 +27,12 @@ Kaynaklar | OtoTrend AI CMS
 
 </div>
 
+<div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="small text-muted">Aktif kaynak</div><div class="h3 mb-0">{{ health.active }}</div></div></div></div>
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="small text-muted">Kontrol gereken</div><div class="h3 mb-0 text-warning">{{ health.needs_attention }}</div></div></div></div>
+    <div class="col-sm-4"><div class="card"><div class="card-body"><div class="small text-muted">Otomatik pasif</div><div class="h3 mb-0 text-danger">{{ health.auto_disabled }}</div></div></div></div>
+</div>
+
 <div class="card">
 
     <div class="table-responsive">
@@ -74,6 +80,14 @@ Kaynaklar | OtoTrend AI CMS
 
                     </span>
 
+                    {% elif source.auto_disabled_at %}
+
+                    <span class="badge bg-warning text-dark">
+
+                        Otomatik pasif
+
+                    </span>
+
                     {% else %}
 
                     <span class="badge bg-danger">
@@ -90,7 +104,13 @@ Kaynaklar | OtoTrend AI CMS
 
                 <td>{{ source.total_news }}</td>
 
-                <td>{{ source.error_count }}</td>
+                <td>
+                    {% if source.consecutive_failures %}
+                    <span class="badge bg-warning text-dark" title="{{ source.last_error or '' }}">{{ source.consecutive_failures }} ardışık</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
 
                <td class="d-flex gap-2">
 
@@ -101,6 +121,14 @@ Kaynaklar | OtoTrend AI CMS
                    >
                        <i class="bi bi-pencil"></i>
                    </a>
+
+                    {% if source.auto_disabled_at %}
+                    <form method="post" action="/sources/{{ source.id }}/enable">
+                        <button type="submit" class="btn btn-sm btn-outline-success" title="Yeniden etkinleştir">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </form>
+                    {% endif %}
 
                     <form
                         method="post"

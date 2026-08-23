@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 VALID_STATUS = {
     "new",
     "ai_pending",
+    "ai_processed",
+    "ai_skipped",
     "ai_ready",
     "editor_review",
     "instagram_draft",
@@ -482,7 +484,10 @@ def get_ai_pending_count():
 
         return (
             db.query(News)
-            .filter(News.ai_processed == False)
+            .filter(
+                News.ai_processed == False,
+                News.status.in_(("new", "ai_pending", "ai_error")),
+            )
             .count()
         )
 

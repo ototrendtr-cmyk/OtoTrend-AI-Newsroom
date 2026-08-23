@@ -1,9 +1,39 @@
 # Oracle Cloud Always Free kurulumu
 
-Bu kurulum, sistemi tek bir Oracle Cloud Always Free A1 makinesinde çalıştırır.
-Web arayüzü, zamanlayıcı, Playwright, Ollama ve kalıcı SQLite veritabanı ayrı
-Docker hizmetleri olarak çalışır. Zamanlayıcı hizmetinden yalnızca bir tane
-çalıştırılmalıdır.
+Bu proje iki ücretsiz çalışma biçimi sunar:
+
+- **Hibrit kurulum (önerilen):** Web arayüzü, zamanlayıcı ve veritabanı Oracle'da;
+  AI modeli ise açık kalan kişisel bilgisayarınızdaki Ollama'da çalışır. Oracle'ın
+  sınırlı işlemci ve belleği model yüküyle dolmaz.
+- **Tek makine kurulumu:** Uygulama, zamanlayıcı ve Ollama aynı Oracle makinesinde
+  çalışır. Küçük modelle kullanılabilir; ancak içerik üretimi belirgin şekilde yavaşlar.
+
+Her iki düzende de zamanlayıcı hizmetinden yalnızca bir tane çalıştırılmalıdır.
+
+## Hibrit kurulum: önce AI bilgisayarını hazırlayın
+
+1. Kişisel bilgisayarınızda Ollama ve `gemma3:4b` modeli çalışır durumda kalsın.
+2. Kişisel bilgisayar ve Oracle makinesinde aynı ücretsiz Tailscale hesabını
+   kullanın. Bu ağ, AI bağlantısını internete açmadan iki makine arasında özel
+   olarak taşır.
+3. Kişisel bilgisayarda Ollama'yı Tailscale ağından erişilebilir hale getirin ve
+   güvenlik duvarında sadece Tailscale ağına `11434` erişimi tanıyın. Genel
+   internete port açmayın.
+4. Oracle'daki `.env` dosyasında `OLLAMA_HOST` değerini bilgisayarınızın
+   Tailscale adresiyle değiştirin. Örnek: `OLLAMA_HOST=http://100.64.0.10:11434`.
+5. Oracle'da aşağıdaki dosyayla başlatın:
+
+```sh
+docker compose -f compose.hybrid.yaml up -d --build
+docker compose -f compose.hybrid.yaml ps
+docker compose -f compose.hybrid.yaml logs -f app worker
+```
+
+Hibrit düzende bilgisayar kapalıysa haber toplama ve panel çalışmaya devam eder;
+yalnızca yeni AI üretimleri bilgisayar tekrar açılana kadar bekler. Sistem, bu
+geçici hataları kontrollü biçimde yeniden dener.
+
+## Tek makine kurulumu
 
 ## 1. Oracle makinesini hazırlayın
 

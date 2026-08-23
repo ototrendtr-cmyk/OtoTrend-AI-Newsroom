@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from app.database.database import SessionLocal
+from app.config import SOURCE_AUTO_DISABLE_FAILURES
 from app.models.source import Source
 
 
@@ -190,6 +191,7 @@ def mark_source_success(source_name: str, news_count: int):
             source.success_count += news_count
             source.total_news += news_count
             source.last_error = None
+            source.consecutive_failures = 0
 
             db.commit()
 
@@ -197,11 +199,14 @@ def mark_source_success(source_name: str, news_count: int):
         db.close()
 
 
-def mark_source_error(source_name: str, error_message: str):
+def mark_source_error(source_name: str, error_message: str) -> bool:
+    """Hatayı kaydeder; eşik aşılırsa kaynağı otomatik pasife alır."""
 
     db = SessionLocal()
 
     try:
+
+        auto_disabled = False
 
         source = (
             db.query(Source)
@@ -212,10 +217,40 @@ def mark_source_error(source_name: str, error_message: str):
         if source:
 
             source.error_count += 1
+            source.consecutive_failures += 1
             source.last_error = error_message
             source.last_run = datetime.utcnow()
 
+            if source.consecutive_failures >= SOURCE_AUTO_DISABLE_FAILURES:
+                source.enabled = False
+                source.auto_disabled_at = datetime.utcnow()
+                auto_disabled = True
+
             db.commit()
+
+        return auto_disabled
+
+    finally:
+        db.close()
+
+
+def enable_source(source_id: int):
+    """Editörün otomatik durdurulan kaynağı kontrollü biçimde tekrar açması."""
+
+    db = SessionLocal()
+
+    try:
+        source = db.query(Source).filter(Source.id == source_id).first()
+        if source is None:
+            return None
+
+        source.enabled = True
+        source.consecutive_failures = 0
+        source.auto_disabled_at = None
+        source.last_error = None
+        db.commit()
+        db.refresh(source)
+        return source
 
     finally:
         db.close()

@@ -130,6 +130,18 @@ function initEditor() {
                             break;
 
 
+                        case "instagram_generate":
+
+                            title = "Instagram Taslağı";
+
+                            message =
+                                ids.length +
+                                " haber için kaynak fotoğrafı, başlık ve açıklama oluşturulacak.<br><br>" +
+                                "İşlem birkaç dakika sürebilir; en fazla 3 haber seçilebilir.";
+
+                            break;
+
+
                         case "scheduled":
 
                             title = "Planla";

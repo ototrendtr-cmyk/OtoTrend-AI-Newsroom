@@ -99,6 +99,21 @@ class News(Base):
         default=False,
     )
 
+    # Otomatik AI denemeleri sınırlıdır. Böylece çevrilemeyen tek bir haber
+    # arka plandaki işlemci kuyruğunu sürekli meşgul etmez.
+    ai_attempts = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    ai_last_error = Column(Text)
+
+    ai_next_retry_at = Column(
+        DateTime(timezone=True),
+        index=True,
+    )
+
     published = Column(
         Boolean,
         default=False,

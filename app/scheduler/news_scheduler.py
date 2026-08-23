@@ -5,6 +5,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.news_service import update_news
 from app.services.ai_worker import process_ai_news
 from app.services.retention_service import run_news_retention
+from app.config import (
+    AI_BATCH_SIZE,
+    AI_WORKER_INTERVAL_SECONDS,
+    NEWS_SCAN_INTERVAL_MINUTES,
+)
 
 
 scheduler = BackgroundScheduler()
@@ -23,10 +28,13 @@ def start_scheduler():
     scheduler.add_job(
         update_news,
         "interval",
-        minutes=5,
+        minutes=NEWS_SCAN_INTERVAL_MINUTES,
         id="news_job",
         replace_existing=True,
         next_run_time=datetime.now(),
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=NEWS_SCAN_INTERVAL_MINUTES * 60,
     )
 
 
@@ -37,10 +45,13 @@ def start_scheduler():
     scheduler.add_job(
         process_ai_news,
         "interval",
-        minutes=2,
-        kwargs={"limit":3},
+        seconds=AI_WORKER_INTERVAL_SECONDS,
+        kwargs={"limit": AI_BATCH_SIZE},
         id="ai_job",
         replace_existing=True,
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=AI_WORKER_INTERVAL_SECONDS,
     )
 
 
@@ -65,8 +76,11 @@ def start_scheduler():
 
 
     print("⏰ Scheduler başlatıldı.")
-    print("   📰 RSS Worker : 5 dakikada bir")
-    print("   🤖 AI Worker  : 2 dakikada bir (3 haber)")
+    print(f"   📰 RSS Worker : {NEWS_SCAN_INTERVAL_MINUTES} dakikada bir")
+    print(
+        "   🤖 AI Worker  : "
+        f"{AI_WORKER_INTERVAL_SECONDS} saniyede bir ({AI_BATCH_SIZE} haber)"
+    )
     print("   🗄️ Haber arşivi : her gün 03:15")
 
 

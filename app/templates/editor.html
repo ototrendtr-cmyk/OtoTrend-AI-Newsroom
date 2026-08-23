@@ -1,4 +1,4 @@
-{% extends "layouts/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}
 OtoTrend AI Newsroom | AI Editör Paneli
@@ -6,7 +6,7 @@ OtoTrend AI Newsroom | AI Editör Paneli
 
 {% block content %}
 
-<div class="container-fluid py-4">
+<div class="editor-page">
 
     <!-- Sayfa Başlığı -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -14,11 +14,11 @@ OtoTrend AI Newsroom | AI Editör Paneli
         <div>
 
             <h2 class="fw-bold mb-1">
-                🤖 AI Editör Paneli
+                Haberler
             </h2>
 
             <p class="text-muted mb-0">
-                AI tarafından oluşturulan haberleri inceleyin, düzenleyin ve yayınlayın.
+                Haber akışını inceleyin, düzenleyin ve yayın sürecini yönetin.
             </p>
 
         </div>
@@ -68,6 +68,22 @@ OtoTrend AI Newsroom | AI Editör Paneli
 
 </div>
 
+{% endblock %}
+
+{% block styles %}
+<style>
+    .editor-page { max-width: 1800px; margin: 0 auto; }
+    .editor-page .table-responsive { max-width: 100%; overflow-x: auto; }
+    .editor-page .table { min-width: 880px; }
+    .editor-page .table thead th { white-space: nowrap; }
+    .editor-page .btn-group { white-space: nowrap; }
+    @media (max-width: 1599.98px) {
+        .editor-page .editor-optional-column { display: none; }
+    }
+    @media (max-width: 991.98px) {
+        .editor-page .dashboard-card { min-height: 130px; }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}

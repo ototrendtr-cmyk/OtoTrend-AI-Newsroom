@@ -35,3 +35,7 @@ Thumbs.db
 
 # Test dosyaları (istersen bunları da ekleme)
 test_*.py
+
+# Otomatik testler proje kaynak kodudur; GitHub yedeğine dahil edilir.
+!tests/
+!tests/test_*.py

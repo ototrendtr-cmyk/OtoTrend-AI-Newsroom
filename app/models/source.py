@@ -108,6 +108,16 @@ class Source(Base):
 
     last_error = Column(Text)
 
+    # Kaynak sağlığı: yalnızca peş peşe gelen hatalar otomatik durdurmaya
+    # neden olur. Başarılı bir tarama bu sayacı sıfırlar.
+    consecutive_failures = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    auto_disabled_at = Column(DateTime)
+
     # ==========================
     # Sistem
     # ==========================

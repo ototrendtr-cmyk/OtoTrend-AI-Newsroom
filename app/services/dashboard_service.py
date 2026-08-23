@@ -44,6 +44,7 @@ def get_dashboard_stats(db: Session) -> dict:
             status_counts.get(status, 0)
             for status in ("new", "ai_pending", "ai_error")
         ),
+        "ai_processed": status_counts.get("ai_processed", 0),
         "ai_ready": status_counts.get("ai_ready", 0),
         "editor_review": status_counts.get("editor_review", 0),
         "instagram_ready": status_counts.get("instagram_ready", 0),

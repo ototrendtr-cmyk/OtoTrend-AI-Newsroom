@@ -9,7 +9,9 @@ from app.services.source_service import (
     update_existing_source,
     remove_source,
     get_enabled_sources,
+    enable_existing_source,
 )
+from app.services.source_health import summarize_source_health
 
 router = APIRouter()
 
@@ -52,6 +54,7 @@ def sources_page(request: Request):
         context={
             "request": request,
             "sources": sources,
+            "health": summarize_source_health(sources),
         },
     )
 
@@ -192,6 +195,16 @@ def delete_source_page(
         url="/sources",
         status_code=303,
     )
+
+
+@router.post("/sources/{source_id}/enable")
+def enable_source_page(request: Request, source_id: int):
+    auth = check_auth(request)
+    if auth:
+        return auth
+
+    enable_existing_source(source_id)
+    return RedirectResponse(url="/sources", status_code=303)
 
 
 # ==========================================================

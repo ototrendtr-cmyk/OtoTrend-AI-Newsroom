@@ -1,4 +1,3 @@
-from app.database.database import SessionLocal
 from app.models.source import Source
 
 
@@ -11,16 +10,18 @@ def calculate_health(source: Source) -> int:
     return int((source.success_count / total) * 100)
 
 
-def update_health_scores():
-    db = SessionLocal()
-
-    try:
-        sources = db.query(Source).all()
-
-        for source in sources:
-            source.health_score = calculate_health(source)
-
-        db.commit()
-
-    finally:
-        db.close()
+def summarize_source_health(sources: list[Source]) -> dict[str, int]:
+    return {
+        "total": len(sources),
+        "active": sum(1 for source in sources if source.enabled),
+        "auto_disabled": sum(
+            1
+            for source in sources
+            if not source.enabled and source.auto_disabled_at is not None
+        ),
+        "needs_attention": sum(
+            1
+            for source in sources
+            if source.enabled and source.consecutive_failures > 0
+        ),
+    }

@@ -106,6 +106,10 @@
                     <span><i class="bi bi-stars text-primary me-2"></i>AI hazır</span>
                     <span class="badge text-bg-primary">{{ stats.ai_ready }}</span>
                 </a>
+                <a href="/dashboard?status=ai_processed" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-funnel text-secondary me-2"></i>AI işlendi, öncelik dışı</span>
+                    <span class="badge text-bg-secondary">{{ stats.ai_processed }}</span>
+                </a>
                 <a href="/editor?status=editor_review" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-pencil-square text-info me-2"></i>Editör incelemesi</span>
                     <span class="badge text-bg-info">{{ stats.editor_review }}</span>

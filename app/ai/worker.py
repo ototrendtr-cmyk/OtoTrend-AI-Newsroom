@@ -4,6 +4,7 @@ from app.database.database import SessionLocal
 from app.models.news import News
 
 from app.ai.pipeline import process
+from app.services.ai_queue_service import review_status_for_importance
 BATCH_SIZE = 3
 
 def process_ai_news(news_id: int | None = None):
@@ -39,6 +40,9 @@ def process_ai_news(news_id: int | None = None):
             news.brand = None
             news.category = None
             news.importance = None
+            news.ai_attempts = 0
+            news.ai_last_error = None
+            news.ai_next_retry_at = None
 
             # Instagram içeriklerini temizle
             news.instagram_title = None
@@ -92,7 +96,13 @@ def process_ai_news(news_id: int | None = None):
                 except (TypeError, ValueError):
                     news.importance = 0
                 news.ai_processed = True
-                news.status = "ai_ready"
+                # Editörün bilinçli olarak yeniden işlediği bir haber, puanı
+                # ne olursa olsun inceleme için hazır kabul edilir.
+                news.status = (
+                    "ai_ready"
+                    if news_id is not None
+                    else review_status_for_importance(news.importance)
+                )
 
                 db.commit()
 

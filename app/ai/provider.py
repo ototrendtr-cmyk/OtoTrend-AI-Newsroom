@@ -144,6 +144,31 @@ def chat(prompt: str) -> str:
     return response.message.content.strip()
 
 
+def json_chat(prompt: str) -> str:
+    """Haber analizinde şemalı JSON döndürülmesini zorunlu kılar."""
+    if _active_provider() == "openai":
+        return _openai_response(prompt, json_mode=True)
+
+    response = client.chat(
+        model=OLLAMA_MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        format="json",
+        keep_alive=OLLAMA_KEEP_ALIVE,
+        options={
+            "num_ctx": OLLAMA_NUM_CTX,
+            "temperature": OLLAMA_TEMPERATURE,
+            "num_predict": OLLAMA_NUM_PREDICT,
+            "top_k": OLLAMA_TOP_K,
+            "top_p": OLLAMA_TOP_P,
+        },
+    )
+
+    return response["message"]["content"].strip()
+
+
 def instagram_chat(prompt: str) -> str:
 
     if _active_provider() == "openai":

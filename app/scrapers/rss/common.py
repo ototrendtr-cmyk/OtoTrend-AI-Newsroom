@@ -86,6 +86,7 @@ def read_rss(
     source_name,
     limit=10,
     verify=True,
+    raise_on_error=False,
 ):
 
     print(f"📡 OKUNAN KAYNAK: {source_name}")
@@ -113,10 +114,14 @@ def read_rss(
 
     except requests.exceptions.RequestException as e:
         print(f"❌ RSS okunamadı ({source_name}): {e}")
+        if raise_on_error:
+            raise
         return []
 
     except Exception as e:
         print(f"❌ RSS parse hatası ({source_name}): {e}")
+        if raise_on_error:
+            raise
         return []
 
     if getattr(feed, "bozo", False):

@@ -48,9 +48,15 @@ from app.services.instagram_visual_service import (
     render_instagram_visual,
     rendered_visual_url,
 )
+from app.services.instagram_draft_service import create_instagram_draft
+from app.services.instagram_job_service import (
+    get_instagram_draft_job,
+    start_instagram_draft_job,
+)
 
 
 router = APIRouter()
+MAX_BULK_INSTAGRAM_DRAFTS = 3
 
 
 templates = Jinja2Templates(
@@ -172,6 +178,12 @@ def bulk_action(
             status_code=303,
         )
 
+    # Tarayıcıdaki toplu işlem ekranı JSON yanıtı bekler. Normal form
+    # gönderimleri ise işlem sonunda editör listesine geri yönlendirilir.
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    message = f"{len(news_ids)} haber başarıyla işlendi."
+    extra_response = {}
+
     # ------------------------------------------------------
     # AI İşle
     # ------------------------------------------------------
@@ -180,6 +192,49 @@ def bulk_action(
 
         for news_id in news_ids:
             process_ai_news(news_id)
+
+    # ------------------------------------------------------
+    # Instagram taslağı
+    # ------------------------------------------------------
+
+    elif action == "instagram_generate":
+
+        if len(news_ids) > MAX_BULK_INSTAGRAM_DRAFTS:
+            detail = (
+                "Toplu Instagram üretiminde aynı anda en fazla "
+                f"{MAX_BULK_INSTAGRAM_DRAFTS} haber seçebilirsiniz."
+            )
+            if is_ajax:
+                return JSONResponse(
+                    {"success": False, "message": detail},
+                    status_code=422,
+                )
+            return RedirectResponse(url="/editor", status_code=303)
+
+        completed_ids = []
+        failed_ids = []
+        for news_id in news_ids:
+            try:
+                create_instagram_draft(news_id)
+                completed_ids.append(news_id)
+            except Exception as exc:
+                print(f"❌ Toplu Instagram taslağı hatası ({news_id}): {exc}")
+                failed_ids.append(news_id)
+
+        message = f"{len(completed_ids)} Instagram taslağı oluşturuldu."
+        if failed_ids:
+            message += " Oluşturulamayan haberler: " + ", ".join(
+                f"#{news_id}" for news_id in failed_ids
+            )
+        extra_response = {
+            "completed_ids": completed_ids,
+            "failed_ids": failed_ids,
+        }
+        if not completed_ids and is_ajax:
+            return JSONResponse(
+                {"success": False, "message": message, **extra_response},
+                status_code=422,
+            )
 
     # ------------------------------------------------------
     # Editör İnceleme
@@ -250,11 +305,6 @@ def bulk_action(
     # AJAX kontrolü
     # ------------------------------------------------------
 
-    is_ajax = (
-        request.headers.get("X-Requested-With")
-        == "XMLHttpRequest"
-    )
-
     # ------------------------------------------------------
     # AJAX JSON cevap
     # ------------------------------------------------------
@@ -266,9 +316,8 @@ def bulk_action(
                 "success": True,
                 "action": action,
                 "count": len(news_ids),
-                "message": (
-                    f"{len(news_ids)} haber başarıyla işlendi."
-                ),
+                "message": message,
+                **extra_response,
             }
         )
 
@@ -685,151 +734,74 @@ def generate_instagram_ai(
             status_code=401,
         )
 
-    # ------------------------------------------------------
-    # HABER
-    # ------------------------------------------------------
-
-    news = get_news_by_id(news_id)
-
-    if news is None:
+    try:
+        draft = create_instagram_draft(news_id)
+        return JSONResponse({"success": True, **draft})
+    except (LookupError, ValueError) as exc:
         return JSONResponse(
             {
                 "success": False,
-                "message": "Haber bulunamadı.",
+                "message": str(exc),
+            },
+            status_code=404 if isinstance(exc, LookupError) else 422,
+        )
+    except Exception as exc:
+        print(f"Instagram AI hatası ({news_id}): {exc}")
+        return JSONResponse(
+            {
+                "success": False,
+                "message": "Instagram içeriği oluşturulurken bir hata oluştu.",
+            },
+            status_code=500,
+        )
+
+
+@router.post("/instagram/{news_id}/generate/start")
+def start_instagram_ai_job(request: Request, news_id: int):
+    """Tarayıcıyı bekletmeden üretim işini kuyruğa alır."""
+    if not request.session.get("authenticated"):
+        return JSONResponse(
+            {"success": False, "message": "Oturum geçersiz."},
+            status_code=401,
+        )
+
+    if get_news_by_id(news_id) is None:
+        return JSONResponse(
+            {"success": False, "message": "Haber bulunamadı."},
+            status_code=404,
+        )
+
+    job = start_instagram_draft_job(news_id)
+    return JSONResponse(
+        {
+            "success": True,
+            "message": job["message"],
+            "job": job,
+        },
+        status_code=202,
+    )
+
+
+@router.get("/instagram/jobs/{job_id}")
+def instagram_ai_job_status(request: Request, job_id: str):
+    """Instagram üretim işinin arayüzde gösterilecek ilerlemesini döndürür."""
+    if not request.session.get("authenticated"):
+        return JSONResponse(
+            {"success": False, "message": "Oturum geçersiz."},
+            status_code=401,
+        )
+
+    job = get_instagram_draft_job(job_id)
+    if job is None:
+        return JSONResponse(
+            {
+                "success": False,
+                "message": "İş bulunamadı veya sunucu yeniden başlatıldı.",
             },
             status_code=404,
         )
 
-    # ------------------------------------------------------
-    # AI İÇİN İÇERİK
-    # ------------------------------------------------------
-
-    news_text = (
-        news.content
-        or news.summary
-        or news.translated_title
-        or news.title
-        or ""
-    )
-
-    if not news_text.strip():
-        return JSONResponse(
-            {
-                "success": False,
-                "message": (
-                    "Instagram AI için haber içeriği bulunamadı."
-                ),
-            },
-            status_code=400,
-        )
-
-    # ------------------------------------------------------
-    # INSTAGRAM AI
-    # ------------------------------------------------------
-
-    try:
-
-        image = resolve_and_save_visual(news)
-        visual_image = visual_for_response(image)
-
-        result, metrics = process_instagram(
-            news_text,
-            source_name=news.source or "Resmi kaynak",
-            published_at=news.published_at or news.created_at,
-            headline=news.translated_title or news.title or "",
-            visual_context=visual_image["message"] or "",
-        )
-
-        # AI taslağını yalnızca tarayıcıya döndürmek yeterli değildir:
-        # kullanıcı sayfayı yenilediğinde başlık, açıklama ve uygulama notu
-        # kaybolmamalıdır. Başarılı üretimi hemen haber kaydına yaz.
-        update_instagram_content(
-            news_id=news_id,
-            instagram_title=result["instagram_title"],
-            instagram_caption=result["instagram_caption"],
-            hashtags=result["hashtags"],
-            image_prompt=result["image_prompt"],
-        )
-
-        generated_image = None
-        visual_render_error = None
-        if image is not None:
-            try:
-                generated_image = render_instagram_visual(
-                    news_id=news_id,
-                    headline=result["instagram_title"],
-                    image_url=image.image_url,
-                ).public_url
-            except VisualRenderError as exc:
-                visual_render_error = str(exc)
-
-        # --------------------------------------------------
-        # BAŞARILI
-        # --------------------------------------------------
-
-        return JSONResponse(
-            {
-                "success": True,
-                "news_id": news_id,
-                "message": (
-                    f"Haber #{news_id} için "
-                    "Instagram taslağı oluşturuldu."
-                ),
-                "data": {
-                    "instagram_title": result.get(
-                        "instagram_title",
-                        "",
-                    ),
-                    "instagram_caption": result.get(
-                        "instagram_caption",
-                        "",
-                    ),
-                    "hashtags": result.get(
-                        "hashtags",
-                        "",
-                    ),
-                    "image_prompt": result.get(
-                        "image_prompt",
-                        "",
-                    ),
-                    "photo_direction": result.get(
-                        "photo_direction",
-                        "",
-                    ),
-                    "visual_brief": result.get(
-                        "visual_brief",
-                        "",
-                    ),
-                    "validation_notes": result.get(
-                        "validation_notes",
-                        [],
-                    ),
-                    "visual_image": visual_image,
-                    "generated_image": generated_image,
-                    "visual_render_error": visual_render_error,
-                },
-                "metrics": metrics,
-            }
-        )
-
-    except Exception as e:
-
-        print(
-            f"❌ Instagram AI hatası "
-            f"({news_id}): {e}"
-        )
-
-        return JSONResponse(
-            {
-                "success": False,
-                "message": (
-                    "Instagram içeriği oluşturulurken "
-                    "bir hata oluştu."
-                ),
-                "error": str(e),
-            },
-            status_code=500,
-        )
+    return JSONResponse({"success": True, "job": job})
 # ==========================================================
 # SINGLE AI REPROCESS
 # ==========================================================

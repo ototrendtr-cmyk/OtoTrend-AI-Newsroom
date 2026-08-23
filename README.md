@@ -44,6 +44,14 @@ ve kaynak listesi otomatik oluşur. Yerel haber geçmişini de taşımak
 isterseniz eski bilgisayardaki `news.db` dosyasını, uygulama kapalıyken, yeni
 bilgisayardaki proje klasörüne kopyalayın. Bu dosya GitHub'a yüklenmez.
 
+AI kuyruğu varsayılan olarak yalnızca son 24 saatte gelen haberleri işler.
+Puanı 8 ve üzeri olanlar editör incelemesine düşer; bu eşikleri `.env`
+dosyasındaki `AI_QUEUE_MAX_AGE_HOURS` ve `AI_REVIEW_MIN_IMPORTANCE`
+değerleriyle değiştirebilirsiniz.
+
+Bir kaynak art arda üç kez hata verirse otomatik olarak pasife alınır. Kaynak
+Yönetimi ekranındaki “yeniden etkinleştir” düğmesiyle tekrar açılabilir.
+
 ## Otomatik çalışma ve saklama
 
 Windows'ta oturum açınca arka planda çalıştırmak için

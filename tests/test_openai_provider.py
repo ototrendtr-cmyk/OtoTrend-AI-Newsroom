@@ -7,6 +7,18 @@ from app.ai import provider
 
 
 class OpenAIProviderTests(unittest.TestCase):
+    def test_analysis_json_chat_uses_ollama_json_mode(self):
+        response = {"message": {"content": '{"title_tr":"Test"}'}}
+
+        with patch.object(provider, "AI_PROVIDER", "ollama"), patch.object(
+            provider.client, "chat", return_value=response
+        ) as chat:
+            result = provider.json_chat("test prompt")
+
+        self.assertEqual(result, '{"title_tr":"Test"}')
+        self.assertEqual(chat.call_args.kwargs["format"], "json")
+        self.assertEqual(chat.call_args.kwargs["messages"][0]["role"], "system")
+
     def test_instagram_chat_uses_responses_api_json_mode(self):
         api_response = Mock()
         api_response.json.return_value = {

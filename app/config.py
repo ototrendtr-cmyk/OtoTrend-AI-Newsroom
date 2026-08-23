@@ -74,6 +74,25 @@ if NEWS_DELETE_AFTER_DAYS <= NEWS_ARCHIVE_AFTER_DAYS:
         "NEWS_DELETE_AFTER_DAYS, NEWS_ARCHIVE_AFTER_DAYS değerinden büyük olmalıdır."
     )
 
+# Aynı kaynak art arda başarısız olursa, sistem boşuna tekrar denemek yerine
+# kaynağı güvenli biçimde pasife alır. Editör kaynağı panelden yeniden açabilir.
+SOURCE_AUTO_DISABLE_FAILURES = int(
+    os.getenv("SOURCE_AUTO_DISABLE_FAILURES", "3")
+)
+if SOURCE_AUTO_DISABLE_FAILURES < 1:
+    raise RuntimeError("SOURCE_AUTO_DISABLE_FAILURES en az 1 olmalıdır.")
+
+# Genel RSS kaynakları ağ ağırlıklıdır. Aynı anda sınırlı sayıda okunmaları,
+# tarama turunu kısaltırken yayıncıları gereksiz istek yüküyle karşılamaz.
+RSS_FETCH_WORKERS = int(os.getenv("RSS_FETCH_WORKERS", "4"))
+NEWS_SCAN_INTERVAL_MINUTES = int(
+    os.getenv("NEWS_SCAN_INTERVAL_MINUTES", "5")
+)
+if RSS_FETCH_WORKERS < 1:
+    raise RuntimeError("RSS_FETCH_WORKERS en az 1 olmalıdır.")
+if NEWS_SCAN_INTERVAL_MINUTES < 1:
+    raise RuntimeError("NEWS_SCAN_INTERVAL_MINUTES en az 1 olmalıdır.")
+
 # ==========================================================
 # AI Configuration
 # ==========================================================
@@ -96,6 +115,15 @@ AI_BATCH_SIZE = int(
         "1",
     )
 )
+
+# Yerel CPU ile çalışan model için kısa ve tekil turlar, büyük paralel
+# paketlerden daha kararlı çalışır. Hatalı içerikler kontrollü aralıklarla
+# yeniden denenir; sonrasında editörün manuel kararına bırakılır.
+AI_WORKER_INTERVAL_SECONDS = int(
+    os.getenv("AI_WORKER_INTERVAL_SECONDS", "150")
+)
+AI_MAX_ATTEMPTS = int(os.getenv("AI_MAX_ATTEMPTS", "3"))
+AI_RETRY_DELAY_MINUTES = int(os.getenv("AI_RETRY_DELAY_MINUTES", "15"))
 
 MAX_CONTENT_LENGTH = int(
     os.getenv(
@@ -130,6 +158,34 @@ OLLAMA_NUM_CTX = int(
     )
 )
 
+# AI kuyruğu yalnızca güncel haberleri işler. AI puanı yeterince yüksek olan
+# içerikler editöryal inceleme için hazırlanır; diğerleri geçmişte aranabilir
+# biçimde saklanır ama editör kuyruğunu doldurmaz.
+AI_QUEUE_MAX_AGE_HOURS = int(
+    os.getenv("AI_QUEUE_MAX_AGE_HOURS", "24")
+)
+AI_REVIEW_MIN_IMPORTANCE = int(
+    os.getenv("AI_REVIEW_MIN_IMPORTANCE", "8")
+)
+AI_TURKISH_QUALITY_RETRIES = int(
+    os.getenv("AI_TURKISH_QUALITY_RETRIES", "1")
+)
+
+if AI_QUEUE_MAX_AGE_HOURS < 1:
+    raise RuntimeError("AI_QUEUE_MAX_AGE_HOURS en az 1 olmalıdır.")
+if not 0 <= AI_REVIEW_MIN_IMPORTANCE <= 10:
+    raise RuntimeError("AI_REVIEW_MIN_IMPORTANCE 0 ile 10 arasında olmalıdır.")
+if AI_TURKISH_QUALITY_RETRIES < 0:
+    raise RuntimeError("AI_TURKISH_QUALITY_RETRIES negatif olamaz.")
+if AI_BATCH_SIZE < 1:
+    raise RuntimeError("AI_BATCH_SIZE en az 1 olmalıdır.")
+if AI_WORKER_INTERVAL_SECONDS < 30:
+    raise RuntimeError("AI_WORKER_INTERVAL_SECONDS en az 30 olmalıdır.")
+if AI_MAX_ATTEMPTS < 1:
+    raise RuntimeError("AI_MAX_ATTEMPTS en az 1 olmalıdır.")
+if AI_RETRY_DELAY_MINUTES < 1:
+    raise RuntimeError("AI_RETRY_DELAY_MINUTES en az 1 olmalıdır.")
+
 OLLAMA_TEMPERATURE = float(
     os.getenv(
         "OLLAMA_TEMPERATURE",
@@ -153,7 +209,7 @@ OLLAMA_NUM_PREDICT = int(
 INSTAGRAM_NUM_PREDICT = int(
     os.getenv(
         "INSTAGRAM_NUM_PREDICT",
-        "420",
+        "320",
     )
 )
 
